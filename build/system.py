@@ -34,6 +34,7 @@ class System(threading.Thread):
         self.defines = []
         self.modules = []
         self.hash_list = []
+        self.hash_write = []
 
     
     def run(self):
@@ -71,6 +72,7 @@ class System(threading.Thread):
             self.add_module_directory('.')
         if not os.path.exists('HashList') and os.path.isfile('HashList'):
                 warning('Could not locate HashList')
+                self.hash_file = open('HashList', 'w')
         for module in self.modules:
             file_list = glob(source + '/' + module + '/*')
             file_list.sort()
@@ -83,7 +85,7 @@ class System(threading.Thread):
                 if file.endswith('.c'):
                     cc_list.append(file)
                 else:
-                    warning(file + ' is not currently supported')
+                    warning('%s is not currently supported' % file)
             cc_list.sort()
             cxx_list.sort()
             counter = 1
@@ -105,19 +107,20 @@ class System(threading.Thread):
                 if not return_value == 0:
                     return return_value
                 try:
-                    os.makedirs('object/' + self.platform_name + '/')
+                    os.makedirs('object/%s/' % self.platform_name)
                 except:
                     pass
                 dest_file = out_file.replace(self.platform_name + '_', '')
                 try:
-                    shutil.copy(out_file, 'object/' +
-                                self.platform_name + '/' + dest_file)
+                    shutil.copy(out_file, 'object/%s/%s' %
+                                (self.platform_name, dest_file))
                 except:
                     return 10
                 try:
                     os.remove(out_file)
                 except:
                     return 20
+                self.hash_write.append(file)
                 counter += 1
             counter = 1
             for file in cxx_list:
@@ -125,26 +128,36 @@ class System(threading.Thread):
                 out_file = out_file.pop()
                 out_file = self.platform_name = '_' + out_file + '.o'
                 cprint('[%3.0f%%] CXX: %s' % (percentage, out_file), magenta)
-                command = self.cxx + ' -o ' + out_file + ' -c ' + file + flags
-                return_value = os.system(command)
+                return_value = os.system('%s -o %s -c %s%s' %
+                                         (self.cxx, out_file, file, flags))
                 if not return_value == 0:
-                    return_value
+                    return return_value
+                else:
+                    self.hash_write.append(file)
                 try:
-                    os.makedirs('object/' + self.platform_name + '/')
+                    os.makedirs('object/%s/' % self.platform_name)
                 except:
                     pass
                 dest_file = out_file.replace(self.platform_name + '_', '')
                 try:
-                    shutil.copy(out_file, 'object/' +
-                                self.platform_name + '/' + destfile)
+                    shutil.copy(out_file, 'object/%s/%s' %
+                                (self.platform_name, destfile))
                 except:
                     return 10
                 try:
                     os.remove(out_file)
                 except:
                     return 20
+                self.hash_write.append(file)
                 counter += 1
-        return 0        
+        try:
+            f = open('HashList', 'w')
+            for item in self.hash_write:
+                f.write('%s:%s\n' % (item, hash_file(item)))
+            f.close()
+        except:
+            return 40
+        return 0  
 
     def link(self):
         ''' Link step '''
@@ -152,23 +165,23 @@ class System(threading.Thread):
         libdir_string = ''
         library_string = ''
         link_string = ''
-        object_list = glob('object/' + self.platform_name + '/*')
+        object_list = glob('object/%s/*' % self.platform_name)
         for object_file in object_list:
-            object_string += ' ' + object_file
+            object_string += ' %s' % object_file
         for library in self.libraries:
-            library_string += ' -l' + library
+            library_string += ' -l%s' % library
         for directory in self.library_directories:
-            libdir_string += ' -L' + directory
+            libdir_string += ' -L%s' % directory
         link_string = object_string + libdir_string + library_string
-        command = self.cxx + ' -o ' + self.binary + link_string
-        cprint('LINK: ' + self.project_name, magenta)
+        command = '%s -o %s%s' % (self.cxx, self.binary, link_string)
+        cprint('LINK: %s' % self.project_name, magenta)
         os.system(command)
         try:
-            os.makedirs('build/' + self.platform_name + '/')
+            os.makedirs('build/%s/' % self.platform_name)
         except:
             pass
         try:
-            shutil.copy(self.binary, 'build/' + self.platform_name + '/')
+            shutil.copy(self.binary, 'build/%s/' % self.platform_name)
         except:
             return 10
         try:
@@ -188,23 +201,13 @@ class System(threading.Thread):
         return which('cc')
 
     def cxx(self):
-        return which('cpp')
+        return which('c++')
 
     def cxx_extension(self):
-        return '.cpp'
+        return ['.cpp', '.C', '.cc', '.cxx']
 
     def ar(self):
         return which('ar')
-
-    def hash_file(self, file):
-        try:
-            f = open(file, 'rb')
-            h = hashlib.sha512()
-            h.update(f.read())
-            f.close()
-            return h.hexdigest()
-        except IOError:
-            error('Could not open: ' + file)
 
     def system_name(self):
         x = str(self)
@@ -216,7 +219,7 @@ class System(threading.Thread):
 
     def strip(self, binary):
         strip_util = which('strip')
-        os.system(strip_util + ' ' + binary)
+        os.system('%s %s' % (strip_util, binary))
 
     def add_flag(self, flag):
         if isinstance(flag, str):
@@ -226,7 +229,7 @@ class System(threading.Thread):
                 if isinstance(item, str): # No more checking after this!
                     self.additional_flags.append(item)
         else:
-            warning(flag + ' is an unsupported datatype!')
+            warning('%s is an unsupported datatype!' % flag)
 
     def add_library(self, library):
         if isinstance(library, str):
@@ -236,7 +239,7 @@ class System(threading.Thread):
                 if isinstance(lib, str):
                     self.libraries.append(lib)
         else:
-            warning(library + ' is unsupported datatype!')
+            warning('%s is an unsupported datatype!' % library)
 
     def add_module_directory(self, directory):
         if isinstance(directory, str):
@@ -246,8 +249,7 @@ class System(threading.Thread):
                 if isinstance(dir, str):
                     self.modules.append(dir)
         else:
-            warning(directory + ' is an unsupported datatype!')
-
+            warning('%s is an unsupported datatype!' % directory)
 
     def add_source_directory(self, directory):
         if isinstance(directory, str):
@@ -257,8 +259,8 @@ class System(threading.Thread):
                 if isinstance(dir, str):
                     self.source_directories.append(dir)
         else:
-            warning(directory + ' is an unsupported datatype!')
-
+            warning('%s is an unsupported datatype!' % directory)
+            
     def add_include_directory(self, directory):
         if isinstance(directory, str):
             self.include_directories.append(directory)
@@ -267,17 +269,17 @@ class System(threading.Thread):
                 if isinstance(dir, str):
                     self.include_directories.append(dir)
         else:
-            warning(directory + ' is unsupported datatype!')
+           warning('%s is an unsupported datatype!' % directory)
 
     def add_library_directory(self, directory):
-        if isinstance(directory):
+        if isinstance(directory, str):
             self.include_directories.append(directory)
         elif isinstance(directory, list):
             for dir in directory:
                 if isinstance(dir, str):
                     self.include_directories.append(dir)
         else:
-            warning(directory + ' is an unsupported datatype!')
+            warning('%s is an unsupported datatype!' % directory)
     
     def add_define(self, define):
         if isinstance(define, str):
@@ -287,4 +289,4 @@ class System(threading.Thread):
                 if isinstance(definition, str):
                     self.define.append(definition)
         else:
-            warning(define + ' is an unsupported datatype!')
+            warning('%s is an unsupported datatype!' % directory)

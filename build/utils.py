@@ -25,11 +25,21 @@ def clean(directory):
     try:
         shutil.rmdir(directory)
     except:
-        cprint('Could not remove object file directory!', red)
+        error('Could not remove object file directory!')
         
 def wait():
     while threading.active_count() > 1:
         time.sleep(1)
+
+def hash_file(self, file):
+    try:
+        f = open(file, 'rb')
+        h = hashlib.sha512()
+        h.update(f.read())
+        f.close()
+        return h.hexdigest()
+    except IOError:
+        error('Could not open: %s' % file)
 
 def is_exe(filepath):
     return os.path.exists(filepath) and os.access(filepath, os.X_OK)
@@ -85,7 +95,7 @@ def cprint(message, color):
         ctypes.windll.kernel32.SetConsoleTextAttribute(handle, white) 
         print('')
     else:
-        print(color + message + '\33[0m')
+        print('%s%s\33[0m' % (color, message))
     time.sleep(0.1) # This will be removed once Queues are used.
         
 def system_type():

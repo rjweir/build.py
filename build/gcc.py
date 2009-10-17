@@ -8,7 +8,7 @@ class GCC(System):
     '''The base GCC class.'''
 
     def cc(self):
-        return 'gcc'
+        return which('gcc')
 
     def cxx(self):
-        return 'g++'
+        return which('g++')
