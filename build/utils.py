@@ -84,12 +84,10 @@ def cprint(message, color):
         print(message),
         ctypes.windll.kernel32.SetConsoleTextAttribute(handle, white) 
         print('')
-        time.sleep(0.1) # Attempt to disable interleaving.
     else:
-        print(color + message)
-        time.sleep(0.1) # Attempt to disable interleaving.
-        os.system('setterm -initialize') # What a hack . This should be changed
-
+        print(color + message + '\33[0m')
+    time.sleep(0.1) # This will be removed once Queues are used.
+        
 def system_type():
     if sys.platform == 'win32':
         return 'windows'
