@@ -112,6 +112,12 @@ def system_type():
         warning('System not recognized')
         return None
 
+def format_options(option, list):
+    string = ''
+    for item in list:
+        string += ' %s%s' % (option, list)
+    return string
+
 def warning(message):
     cprint(message, yellow)
 

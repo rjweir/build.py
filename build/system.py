@@ -39,14 +39,19 @@ class System(threading.Thread):
     def run(self):
         start_time = datetime.datetime.now()
         self.pre_build()
-        return_value = self.compile_files()
-        if not return_value is 0:
-            error('\nError: ' + str(return_value))
+        if self.unity is True:
+            cprint('Unity build is in effect', green)
+            return_value = self.unity_build()
             sys.exit(return_value)
-        return_value = self.link()
-        if not return_value is 0:
-            error('\nError: ' + str(return_value))
-            sys.exit(return_value)
+        else:
+            return_value = self.compile_files()
+            if not return_value is 0:
+                error('\nError: ' + str(return_value))
+                sys.exit(return_value)
+            return_value = self.link()
+            if not return_value is 0:
+                error('\nError: ' + str(return_value))
+                sys.exit(return_value)
         self.post_build()
         end_time = datetime.datetime.now()
         build_time = end_time - start_time
@@ -58,16 +63,12 @@ class System(threading.Thread):
 
     def compile_files(self):
         ''' Compiling Step '''
-        if self.unity is True:
-            cprint('Unity build is in effect', green)
-            return_value = self.unity_build()
-            return return_value
         cc_list = []
         cxx_list = []
         if len(self.source_directories) > 1:
             warning('Only a central source directory is currently supported')
         source = self.source_directories.pop()
-        if len(self.modules) == 0:
+        if len(self.modules) is 0:
             self.add_module_directory('.')
         if not (os.path.exists('HashList') and os.path.isfile('HashList')):
             warning('Could not locate HashList')
@@ -91,7 +92,8 @@ class System(threading.Thread):
                         file = file.replace('\\', '/')
                         file_list.append(file)
                         file_list.sort()
-                file_list.sort()
+                else:
+                    file_list.sort()
                 object_check = file.split('/')
                 object_check = object_check.pop() + '.o'
                 for file in file_list:
@@ -112,12 +114,9 @@ class System(threading.Thread):
                 cxx_list.sort()
                 counter = 1
                 flags = ''
-                for include_directory in self.include_directories:
-                    flags += ' -I%s' % include_directory
-                for definition in self.defines:
-                    flags += ' -D%s' % definition
-                for flag in self.additional_flags:
-                    flags += ' %s' % flag
+                flags += format_options('-I', self.include_directories)
+                flags += format_options('-D', self.defines)
+                flags += format_options('', self.additional_flags)
                 for file in cc_list:
                     out_file = file.split('/')
                     out_file = out_file.pop()
@@ -191,12 +190,9 @@ class System(threading.Thread):
         library_string = ''
         link_string = ''
         object_list = glob('object/%s/*' % self.platform_name)
-        for object_file in object_list:
-            object_string += ' %s' % object_file
-        for library in self.libraries:
-            library_string += ' -l%s' % library
-        for directory in self.library_directories:
-            libdir_string += ' -L%s' % directory
+        object_string = format_options('', object_list)
+        library_string = format_options('-l', self.libraries)
+        libdir_string = format_options('-L', self.library_directories)
         link_string = object_string + libdir_string + library_string
         command = '%s -o %s%s' % (self.cxx, self.binary, link_string)
         cprint('LINK: %s' % self.project_name, magenta)
@@ -219,6 +215,43 @@ class System(threading.Thread):
         pass
 
     def unity_build(self):
+        '''build_string = ''
+        source = self.source_directories.pop()
+        for module in self.modules:
+            cc = open('unity_%s.c' % module, 'w')
+            cxx = open('unity_%s.cpp' % module, 'w')
+            file_list = glob('%s/%s/*' % (source, module))
+            if system_type() is 'windows':
+                for file in file_list:
+                    file_list.remove(file)
+                    file = file.replace('\\', '/')
+                    file_list.append(file)
+                    file_list.sort()
+            else:
+                file_list.sort()
+            for file in file_list:
+                if file.endswith('.c'):
+                    cc.write('#include %s' % file)
+                elif extension in self.cxx_extension is  \
+                             file.endswith(extension):
+                    cxx.write('#include %s' % file)
+                else:
+                    pass
+            cc.close()
+            cxx.close()
+        cc_list = glob('unity_*.c')
+        cxx_list = glob('unity_*.cpp')
+        for file in file_list:
+            build_string += ' %s' % file
+        return_value = os.system('%s -o %s%s' %
+                                 (self.cxx, self.binary, build_string))
+        if not return_value is 0:
+            error('Could not perform unity build!')
+        for file in file_list:
+            try:
+                os.remove(file)
+            except:
+                error('Could not delete: %s' % file)'''
         return 0
 
     def cc(self):
