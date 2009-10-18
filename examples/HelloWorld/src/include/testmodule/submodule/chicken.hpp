@@ -1,0 +1,6 @@
+#ifndef TESTMODULE_SUBMODULE_CHICKEN_HPP_
+#define TESTMODULE_SUBMODULE_CHICKEN_HPP_
+
+void chicken();
+
+#endif

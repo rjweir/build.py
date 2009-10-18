@@ -35,7 +35,7 @@ class System(threading.Thread):
         self.hash_list = []
         self.hash_write = []
 
-    
+
     def run(self):
         start_time = datetime.datetime.now()
         self.pre_build()
@@ -55,7 +55,7 @@ class System(threading.Thread):
     def pre_build(self):
         ''' Prebuild steps '''
         pass
-    
+
     def compile_files(self):
         ''' Compiling Step '''
         if self.unity is True:
@@ -222,7 +222,7 @@ class System(threading.Thread):
         return 0
 
     def cc(self):
-        ''' Returns the full path to the utility ''' 
+        ''' Returns the full path to the utility '''
         return which('cc')
 
     def cxx(self):
@@ -251,7 +251,7 @@ class System(threading.Thread):
             ext = '.elf'
         else:
             error('Something went wrong!')
-        return '%s%s' % (self.project_name, ext) 
+        return '%s%s' % (self.project_name, ext)
 
     def strip(self, binary):
         strip_util = which('strip')
@@ -296,7 +296,7 @@ class System(threading.Thread):
                     self.source_directories.append(dir)
         else:
             warning('%s is an unsupported datatype!' % directory)
-            
+
     def add_include_directory(self, directory):
         if isinstance(directory, str):
             self.include_directories.append(directory)
@@ -316,7 +316,7 @@ class System(threading.Thread):
                     self.include_directories.append(dir)
         else:
             warning('%s is an unsupported datatype!' % directory)
-    
+
     def add_define(self, define):
         if isinstance(define, str):
             self.define.append(define)
