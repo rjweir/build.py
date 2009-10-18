@@ -4,11 +4,9 @@
 
 import os
 import sys
-import time
 import shutil
 import tarfile
 import hashlib
-import threading
 
 if sys.platform == 'win32':
     import ctypes
@@ -106,8 +104,8 @@ def cprint(message, color):
 def system_type():
     if sys.platform == 'win32':
         return 'windows'
-    elif sys.platform == 'linux':
-        return sys.platform
+    elif sys.platform == 'linux' or sys.platform == 'linux2':
+        return 'linux'
     elif sys.platform == 'darwin':
         return 'macosx'
     else:

@@ -69,7 +69,7 @@ class System(threading.Thread):
         source = self.source_directories.pop()
         if len(self.modules) == 0:
             self.add_module_directory('.')
-        if not os.path.exists('HashList') and os.path.isfile('HashList'):
+        if not (os.path.exists('HashList') and os.path.isfile('HashList')):
             warning('Could not locate HashList')
             self.hash_file = open('HashList', 'w')
         else:
@@ -95,12 +95,12 @@ class System(threading.Thread):
                 object_check = file.split('/')
                 object_check = object_check.pop() + '.o'
                 for file in file_list:
-                    if not file in hash_list and \
+                    if not (file in hash_list and \
                         hash_file(file) == hash_list[file] and \
                         os.path.exists('object/%s/%s' %
                                        (module, object_check)) and \
                         os.path.isfile('object/%s/%s' %
-                                      (module, object_check)):
+                                      (module, object_check))):
                         if file.endswith('.c'):
                             cc_list.append(file)
                         elif extension in self.cxx_extension ==  \
