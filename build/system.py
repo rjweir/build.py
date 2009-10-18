@@ -7,6 +7,7 @@ import sys
 import shutil
 import datetime
 import threading
+import subprocess
 from glob import glob
 
 from utils import *
@@ -72,7 +73,7 @@ class System(threading.Thread):
             self.add_module_directory('.')
         if not (os.path.exists('HashList') and os.path.isfile('HashList')):
             warning('Could not locate HashList')
-            self.hash_file = open('HashList', 'w')
+            self.hash_file = open('HashList', 'r+')
         else:
             self.hash_file = open('HashList', 'r')
             for line in self.hash_list:
@@ -126,7 +127,7 @@ class System(threading.Thread):
                     out_file = '%s_%s.o' % (self.platform_name, out_file)
                     command = '%s -o %s -c %s%s' % \
                               (self.cc, out_file, file, flags)
-                    return_value = os.system(command)
+                    return_value = subprocess.call(command)
                     if not return_value is 0:
                         return return_value
                     try:
@@ -152,7 +153,7 @@ class System(threading.Thread):
                     out_file = self.platform_name = '_' + out_file + '.o'
                     cprint('[%3.0f%%] CXX: %s' %
                            (percentage, out_file), magenta)
-                    return_value = os.system('%s -o %s -c %s%s' %
+                    return_value = subprocess.call('%s -o %s -c %s%s' %
                                              (self.cxx, out_file, file, flags))
                     if not return_value is 0:
                         return return_value
@@ -196,7 +197,7 @@ class System(threading.Thread):
         link_string = object_string + libdir_string + library_string
         command = '%s -o %s%s' % (self.cxx, self.binary, link_string)
         cprint('LINK: %s' % self.project_name, magenta)
-        os.system(command)
+        subprocess.call(command)
         try:
             os.makedirs('build/%s/' % self.platform_name)
         except:
@@ -243,7 +244,7 @@ class System(threading.Thread):
         cxx_list = glob('unity_*.cpp')
         for file in file_list:
             build_string += ' %s' % file
-        return_value = os.system('%s -o %s%s' %
+        return_value = subprocess.call('%s -o %s%s' %
                                  (self.cxx, self.binary, build_string))
         if not return_value is 0:
             error('Could not perform unity build!')
@@ -288,12 +289,16 @@ class System(threading.Thread):
 
     def strip(self, binary):
         strip_util = which('strip')
-        os.system('%s %s' % (strip_util, binary))
+        subprocess.call('%s %s' % (strip_util, binary))
 
     def add_flag(self, flag):
         if isinstance(flag, str):
             self.additional_flags.append(flag)
         elif isinstance(flag, list):
+            for item in flag:
+                if isinstance(item, str): # No more checking after this!
+                    self.additional_flags.append(item)
+        elif isinstance(flag, tuple):
             for item in flag:
                 if isinstance(item, str): # No more checking after this!
                     self.additional_flags.append(item)

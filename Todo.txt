@@ -1,4 +1,2 @@
  * Write the repository updater classes.
- * Move System from calling os.system to something a little less deprecated (multiprocess, subprocess).
- * Add in file checking for previous build.
  * Full on Unity builds.
