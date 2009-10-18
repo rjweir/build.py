@@ -5,7 +5,6 @@
 import os
 import sys
 import shutil
-import hashlib
 import datetime
 import threading
 from glob import glob
