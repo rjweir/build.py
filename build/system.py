@@ -40,11 +40,11 @@ class System(threading.Thread):
         start_time = datetime.datetime.now()
         self.pre_build()
         return_value = self.compile_files()
-        if not return_value == 0:
+        if not return_value is 0:
             error('\nError: ' + str(return_value))
             sys.exit(return_value)
         return_value = self.link()
-        if not return_value == 0:
+        if not return_value is 0:
             error('\nError: ' + str(return_value))
             sys.exit(return_value)
         self.post_build()
@@ -77,15 +77,15 @@ class System(threading.Thread):
             for line in self.hash_list:
                 line = line.replace('\n', '')
                 line = line.split(':')
-                if not len(line[1]) == 128:
+                if not len(line[1]) is 128:
                     warning('Corrupt hash detected! Skipping!')
                 else:
                     hash_list.append(line)
-            hash_list = tuple(hash_list)
-            hash_list = dict(hash_list)
+            self.hash_list = tuple(hash_list)
+            self.hash_list = dict(hash_list)
             for module in self.modules:
                 file_list = glob('%s/%s/*' % (source, module))
-                if system_type() == 'windows':
+                if system_type() is 'windows':
                     for file in file_list:
                         file_list.remove(file)
                         file = file.replace('\\', '/')
@@ -96,14 +96,14 @@ class System(threading.Thread):
                 object_check = object_check.pop() + '.o'
                 for file in file_list:
                     if not (file in hash_list and \
-                        hash_file(file) == hash_list[file] and \
+                        hash_file(file) is hash_list[file] and \
                         os.path.exists('object/%s/%s' %
                                        (module, object_check)) and \
                         os.path.isfile('object/%s/%s' %
                                       (module, object_check))):
                         if file.endswith('.c'):
                             cc_list.append(file)
-                        elif extension in self.cxx_extension ==  \
+                        elif extension in self.cxx_extension is  \
                              file.endswith(extension):
                             self.cxx_list.append(file)
                         else:
@@ -128,7 +128,7 @@ class System(threading.Thread):
                     command = '%s -o %s -c %s%s' % \
                               (self.cc, out_file, file, flags)
                     return_value = os.system(command)
-                    if not return_value == 0:
+                    if not return_value is 0:
                         return return_value
                     try:
                         os.makedirs('object/%s/' % self.platform_name)
@@ -155,7 +155,7 @@ class System(threading.Thread):
                            (percentage, out_file), magenta)
                     return_value = os.system('%s -o %s -c %s%s' %
                                              (self.cxx, out_file, file, flags))
-                    if not return_value == 0:
+                    if not return_value is 0:
                         return return_value
                     else:
                         self.hash_write.append(file)
@@ -243,11 +243,11 @@ class System(threading.Thread):
         return x
 
     def binary(self):
-        if system_type() == 'windows':
+        if system_type() is 'windows':
             ext = '.exe'
-        elif system_type() == 'macosx':
+        elif system_type() is 'macosx':
             ext = '.mach'
-        elif system_type() == 'linux':
+        elif system_type() is 'linux':
             ext = '.elf'
         else:
             error('Something went wrong!')
