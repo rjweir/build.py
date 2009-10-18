@@ -7,6 +7,7 @@ import sys
 import time
 import shutil
 import tarfile
+import hashlib
 import threading
 
 if sys.platform == 'win32':
