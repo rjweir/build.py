@@ -28,10 +28,14 @@ def clean(directory):
         error('Could not remove object file directory!')
         
 def wait():
-    while threading.active_count() > 1:
-        time.sleep(1)
+    if sys.version[1] < 6:
+        while threading.active_count() > 1:
+            time.sleep(1)
+    else: # Is this even necessary? Curse you 2.5 users!
+        while threading.activeCount() > 1:
+            time.sleep(1)
 
-def hash_file(self, file):
+def hash_file(file):
     try:
         f = open(file, 'rb')
         h = hashlib.sha512()
@@ -52,14 +56,14 @@ def which(program_name):
     if filepath:
         if is_exe(program_name):
             return program_name
-        else:
-            for path in os.environ['PATH'].split(os.pathsep):
-                if sys.platform == 'win32':
-                    exe_file = os.path.join(path, program_name + '.exe')
-                else:
-                    exe_file = os.path.join(path, program_name)
-                if is_exe(exe_file):
-                    return exe_file
+    else:
+        for path in os.environ['PATH'].split(os.pathsep):
+            if sys.platform == 'win32':
+                exe_file = os.path.join(path, program_name + '.exe')
+            else:
+                exe_file = os.path.join(path, program_name)
+            if is_exe(exe_file):
+                return exe_file
     return ''
 		
 if sys.platform == 'win32':

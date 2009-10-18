@@ -56,11 +56,11 @@ class System(threading.Thread):
     def pre_build(self):
         ''' Prebuild steps '''
         pass
-
+    
     def compile_files(self):
         ''' Compiling Step '''
-        if self.unity == True:
-            cprint('Unity Build in effect', green)
+        if self.unity is True:
+            cprint('Unity build is in effect', green)
             return_value = self.unity_build()
             return return_value
         cc_list = []
@@ -71,93 +71,119 @@ class System(threading.Thread):
         if len(self.modules) == 0:
             self.add_module_directory('.')
         if not os.path.exists('HashList') and os.path.isfile('HashList'):
-                warning('Could not locate HashList')
-                self.hash_file = open('HashList', 'w')
-        for module in self.modules:
-            file_list = glob(source + '/' + module + '/*')
-            file_list.sort()
-            for file in file_list:
+            warning('Could not locate HashList')
+            self.hash_file = open('HashList', 'w')
+        else:
+            self.hash_file = open('HashList', 'r')
+            for line in self.hash_list:
+                line = line.replace('\n', '')
+                line = line.split(':')
+                if not len(line[1]) == 128:
+                    warning('Corrupt hash detected! Skipping!')
+                else:
+                    hash_list.append(line)
+            hash_list = tuple(hash_list)
+            hash_list = dict(hash_list)
+            for module in self.modules:
+                file_list = glob('%s/%s/*' % (source, module))
                 if system_type() == 'windows':
-                    file = file.replace('\\', '/')
-                for extension in self.cxx_extension:
-                    if file.endswith(extension):
-                        cxx_list.append(file)
-                if file.endswith('.c'):
-                    cc_list.append(file)
-                else:
-                    warning('%s is not currently supported' % file)
-            cc_list.sort()
-            cxx_list.sort()
-            counter = 1
-            flags = ''
-            for include_directory in self.include_directories:
-                flags += ' -I' + include_directory
-            for definition in self.defines:
-                flags += ' -D' + definition
-            for flag in self.addition_flags:
-                flags += ' ' + flag
-            for file in cc_list:
-                out_file = file.split('/')
-                out_file = out_file.pop()
-                percentage = 100 * float(counter)/float(len(cc_list))
-                cprint('[%3.0f%%] CXX: %s' % (percentage, out_file), magenta)
-                out_file = self.platform_name + '_' + out_file + '.o'
-                command = self.cc + ' -o ' + out_file + ' -c ' + file + flags
-                return_value = os.system(command)
-                if not return_value == 0:
-                    return return_value
-                try:
-                    os.makedirs('object/%s/' % self.platform_name)
-                except:
-                    pass
-                dest_file = out_file.replace(self.platform_name + '_', '')
-                try:
-                    shutil.copy(out_file, 'object/%s/%s' %
+                    for file in file_list:
+                        file_list.remove(file)
+                        file = file.replace('\\', '/')
+                        file_list.append(file)
+                        file_list.sort()
+                file_list.sort()
+                object_check = file.split('/')
+                object_check = object_check.pop() + '.o'
+                for file in file_list:
+                    if not file in hash_list and \
+                        hash_file(file) == hash_list[file] and \
+                        os.path.exists('object/%s/%s' %
+                                       (module, object_check)) and \
+                        os.path.isfile('object/%s/%s' %
+                                      (module, object_check)):
+                        if file.endswith('.c'):
+                            cc_list.append(file)
+                        elif extension in self.cxx_extension ==  \
+                             file.endswith(extension):
+                            self.cxx_list.append(file)
+                        else:
+                            warning('%s is not currently supported' % file)
+                cc_list.sort()
+                cxx_list.sort()
+                counter = 1
+                flags = ''
+                for include_directory in self.include_directories:
+                    flags += ' -I%s' % include_directory
+                for definition in self.defines:
+                    flags += ' -D%s' % definition
+                for flag in self.additional_flags:
+                    flags += ' %s' % flag
+                for file in cc_list:
+                    out_file = file.split('/')
+                    out_file = out_file.pop()
+                    percentage = 100 * float(counter)/float(len(cc_list))
+                    cprint('[%3.0f%%] CC: %s' % (percentage, out_file),
+                           magenta)
+                    out_file = '%s_%s.o' % (self.platform_name, out_file)
+                    command = '%s -o %s -c %s%s' % \
+                              (self.cc, out_file, file, flags)
+                    return_value = os.system(command)
+                    if not return_value == 0:
+                        return return_value
+                    try:
+                        os.makedirs('object/%s/' % self.platform_name)
+                    except:
+                        pass
+                    dest_file = out_file.replace(self.platform_name + '_', '')
+                    try:
+                            shutil.copy(out_file, 'object/%s/%s' %
                                 (self.platform_name, dest_file))
-                except:
-                    return 10
-                try:
-                    os.remove(out_file)
-                except:
-                    return 20
-                self.hash_write.append(file)
-                counter += 1
-            counter = 1
-            for file in cxx_list:
-                out_file = file.split('/')
-                out_file = out_file.pop()
-                out_file = self.platform_name = '_' + out_file + '.o'
-                cprint('[%3.0f%%] CXX: %s' % (percentage, out_file), magenta)
-                return_value = os.system('%s -o %s -c %s%s' %
-                                         (self.cxx, out_file, file, flags))
-                if not return_value == 0:
-                    return return_value
-                else:
+                    except:
+                        return 10
+                    try:
+                        os.remove(out_file)
+                    except:
+                        return 20
                     self.hash_write.append(file)
+                    counter += 1
+                counter = 1
+                for file in cxx_list:
+                    out_file = file.split('/')
+                    out_file = out_file.pop()
+                    out_file = self.platform_name = '_' + out_file + '.o'
+                    cprint('[%3.0f%%] CXX: %s' %
+                           (percentage, out_file), magenta)
+                    return_value = os.system('%s -o %s -c %s%s' %
+                                             (self.cxx, out_file, file, flags))
+                    if not return_value == 0:
+                        return return_value
+                    else:
+                        self.hash_write.append(file)
+                    try:
+                        os.makedirs('object/%s/' % self.platform_name)
+                    except:
+                        pass
+                    dest_file = out_file.replace(self.platform_name + '_', '')
+                    try:
+                        shutil.copy(out_file, 'object/%s/%s' %
+                                    (self.platform_name, dest_file))
+                    except:
+                        return 10
+                    try:
+                        os.remove(out_file)
+                    except:
+                        return 20
+                    self.hash_write.append(file)
+                    counter += 1
                 try:
-                    os.makedirs('object/%s/' % self.platform_name)
+                    for item in self.hash_write:
+                        self.hash_file.write('%s:%s\n' %
+                                             (item, hash_file(item)))
+                    self.hash_file.close()
                 except:
-                    pass
-                dest_file = out_file.replace(self.platform_name + '_', '')
-                try:
-                    shutil.copy(out_file, 'object/%s/%s' %
-                                (self.platform_name, destfile))
-                except:
-                    return 10
-                try:
-                    os.remove(out_file)
-                except:
-                    return 20
-                self.hash_write.append(file)
-                counter += 1
-        try:
-            f = open('HashList', 'w')
-            for item in self.hash_write:
-                f.write('%s:%s\n' % (item, hash_file(item)))
-            f.close()
-        except:
-            return 40
-        return 0  
+                    return 40
+                return 0
 
     def link(self):
         ''' Link step '''
@@ -216,6 +242,17 @@ class System(threading.Thread):
         x = x.replace('<', '')
         x = x.replace('\n', '')
         return x
+
+    def binary(self):
+        if system_type() == 'windows':
+            ext = '.exe'
+        elif system_type() == 'macosx':
+            ext = '.mach'
+        elif system_type() == 'linux':
+            ext = '.elf'
+        else:
+            error('Something went wrong!')
+        return '%s%s' % (self.project_name, ext) 
 
     def strip(self, binary):
         strip_util = which('strip')
