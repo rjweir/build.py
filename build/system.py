@@ -10,6 +10,12 @@ import threading
 import subprocess
 from glob import glob
 
+try:
+    import psyco
+    psyco.full()
+except ImportError:
+    pass
+
 from utils import *
 
 class System(threading.Thread):
@@ -24,7 +30,6 @@ class System(threading.Thread):
         self.binary = self.binary()
         self.cxx = self.cxx()
         self.cc = self.cc()
-        self.ar = self.ar()
         self.include_directories = []
         self.library_directories = []
         self.platform_libraries = []
@@ -132,17 +137,17 @@ class System(threading.Thread):
                         return return_value
                     try:
                         os.makedirs('object/%s/' % self.platform_name)
-                    except:
+                    except OSError:
                         pass
                     dest_file = out_file.replace(self.platform_name + '_', '')
                     try:
                             shutil.copy(out_file, 'object/%s/%s' %
                                 (self.platform_name, dest_file))
-                    except:
+                    except IOError:
                         return 10
                     try:
                         os.remove(out_file)
-                    except:
+                    except OSError:
                         return 20
                     self.hash_write.append(file)
                     counter += 1
@@ -191,7 +196,7 @@ class System(threading.Thread):
         library_string = ''
         link_string = ''
         object_list = glob('object/%s/*' % self.platform_name)
-        object_string = format_options('', object_list)
+        object_string = format_options(object_list)
         library_string = format_options('-l', self.libraries)
         libdir_string = format_options('-L', self.library_directories)
         link_string = object_string + libdir_string + library_string
@@ -200,15 +205,15 @@ class System(threading.Thread):
         subprocess.call(command)
         try:
             os.makedirs('build/%s/' % self.platform_name)
-        except:
+        except OSError:
             pass
         try:
-            shutil.copy(self.binary, 'build/%s/' % self.platform_name)
-        except:
+            shutil.copy2(self.binary, 'build/%s/' % self.platform_name)
+        except IOError:
             return 10
         try:
             os.remove(self.binary)
-        except:
+        except OSError:
             return 20
         return 0 #; I put a semi-colon there, for protection.
 
@@ -265,9 +270,6 @@ class System(threading.Thread):
     def cxx_extension(self):
         return ['.cpp', '.C', '.cc', '.cxx']
 
-    def ar(self):
-        return which('ar')
-
     def system_name(self):
         x = str(self)
         x = x.split('(')
@@ -312,6 +314,10 @@ class System(threading.Thread):
             for lib in library:
                 if isinstance(lib, str):
                     self.libraries.append(lib)
+        elif isinstance(library, tuple):
+            for lib in library:
+                if isinstance(lib, str):
+                    self.libraries.append(lib)
         else:
             warning('%s is an unsupported datatype!' % library)
 
@@ -319,6 +325,10 @@ class System(threading.Thread):
         if isinstance(directory, str):
             self.modules.append(directory)
         elif isinstance(directory, list):
+            for dir in directory:
+                if isinstance(dir, str):
+                    self.modules.append(dir)
+        elif isinstance(directory, tuple):
             for dir in directory:
                 if isinstance(dir, str):
                     self.modules.append(dir)
@@ -332,6 +342,10 @@ class System(threading.Thread):
             for dir in directory:
                 if isinstance(dir, str):
                     self.source_directories.append(dir)
+        elif isinstance(directory, tuple):
+            for dir in directory:
+                if isinstance(dir, str):
+                    self.source_directories.append(dir)
         else:
             warning('%s is an unsupported datatype!' % directory)
 
@@ -342,6 +356,10 @@ class System(threading.Thread):
             for dir in directory:
                 if isinstance(dir, str):
                     self.include_directories.append(dir)
+        elif isinstance(directory, tuple):
+            for dir in directory:
+                if isinstance(dir, str):
+                    self.include.directories.append(dir)
         else:
            warning('%s is an unsupported datatype!' % directory)
 
@@ -352,6 +370,10 @@ class System(threading.Thread):
             for dir in directory:
                 if isinstance(dir, str):
                     self.include_directories.append(dir)
+        elif isinstance(directory, tuple):
+            for dir in directory:
+                if isinstance(dir, str):
+                    self.include_directories.append(dir)
         else:
             warning('%s is an unsupported datatype!' % directory)
 
@@ -359,6 +381,10 @@ class System(threading.Thread):
         if isinstance(define, str):
             self.define.append(define)
         elif isinstance(define, list):
+            for definition in define:
+                if isinstance(definition, str):
+                    self.define.append(definition)
+        elif isinstance(define, tuple):
             for definition in define:
                 if isinstance(definition, str):
                     self.define.append(definition)
