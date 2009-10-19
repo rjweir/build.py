@@ -38,18 +38,18 @@ class System(threading.Thread):
     def run(self):
         start_time = datetime.datetime.now()
         self.pre_build()
-        if self.unity is True:
+        if self.unity == True:
             cprint('Unity build is in effect', green)
             return_value = self.unity_build()
-            if not return_value is 0:
+            if not return_value == 0:
                 error('\nError: %s' % return_value)
             sys.exit(return_value)
         return_value = self.compile_files()
-        if not return_value is 0:
+        if not return_value == 0:
             error('\nError: %s' % return_value)
             sys.exit(return_value)
         return_value = self.link()
-        if not return_value is 0:
+        if not return_value == 0:
             error('\nError: %s' % return_value)
             sys.exit(return_value)
         self.post_build()
@@ -67,7 +67,7 @@ class System(threading.Thread):
         if len(self.source_directories) > 1:
             warning('Only a central source directory is currently supported')
         source = self.source_directories.pop()
-        if len(self.modules) is 0:
+        if len(self.modules) == 0:
             self.add_module_directory('.')
         if not (os.path.exists('HashList') and os.path.isfile('HashList')):
             warning('Could not locate HashList')
@@ -77,7 +77,7 @@ class System(threading.Thread):
         for line in self.hash_list:
             line = line.replace('\n', '')
             line = line.split(':')
-            if not len(line[1]) is 128:
+            if not len(line[1]) == 128:
                 warning('Corrupt hash detected!')
             else:
                 hash_list.append(line)
@@ -85,7 +85,7 @@ class System(threading.Thread):
         self.hash_list = dict(hash_list)
         for module in self.modules:
             file_list = glob('%s/%s/*' % (source, module))
-            if system_type() is 'windows':
+            if system_type() == 'windows':
                 for file in file_list:
                     file_list.remove(file)
                     file = file.replace('\\', '/')
@@ -97,7 +97,7 @@ class System(threading.Thread):
             object_check = object_check.pop() + '.o'
             for file in file_list:
                 if not (file in hash_list and \
-                        hash_file(file) is hash_list[file] and \
+                        hash_file(file) == hash_list[file] and \
                         os.path.exists('object/%s/%s/%s' %
                                        (self.platform_name,
                                         module, object_check)) and \
@@ -113,8 +113,8 @@ class System(threading.Thread):
         cxx_list.sort()
         counter = 1
         flags = ''
-        flags += format_options('-I', self.include_directories)
-        flags += format_options('-D', self.defines)
+        flags += format_options(self.include_directories, '-I')
+        flags += format_options(self.defines, '-D')
         flags += format_options(self.additional_flags)
         for file in cc_list:
             module = ''
@@ -124,7 +124,7 @@ class System(threading.Thread):
             module_list = out_file
             out_file = out_file.pop()
             module_list.pop()
-            if not len(module_list) is 1:
+            if not len(module_list) == 1:
                 module = '/'.join(module_list)
             else:
                 module = module_list.pop()
@@ -133,7 +133,7 @@ class System(threading.Thread):
             out_file = '%s_%s.o' % (self.platform_name, out_file)
             command = '%s -o %s -c %s%s' % (self.cc, out_file, file, flags)
             return_value = subprocess.call(command)
-            if not return_value is 0:
+            if not return_value == 0:
                 return return_value
             try:
                 os.makedirs('object/%s/%s/' % (self.platform_name, module))
@@ -160,7 +160,7 @@ class System(threading.Thread):
             module_list = out_file
             out_file = out_file.pop()
             module_list.pop()
-            if not len(module_list) is 1:
+            if not len(module_list) == 1:
                 module = '/'.join(module_list)
             else:
                 mdoule = module_list.pop()
@@ -169,7 +169,7 @@ class System(threading.Thread):
             out_file = '%s_%s.o' % (self.platform_name, out_file)
             command = '%s -o %s -c %s%s' % (self.cxx, out_file, file, flags)
             return_value = subprocess.call(command)
-            if not return_value is 0:
+            if not return_value == 0:
                 return return_value
             try:
                 os.makedirs('object/%s/%s/' % (self.platform_name, module))
@@ -204,8 +204,8 @@ class System(threading.Thread):
         for module in self.modules:
             object_list = glob('object/%s/%s/*' % (self.platform_name, module))
             object_string += format_options(object_list)
-        library_string = format_options('-l', self.libraries)
-        libdir_string = format_options('-L', self.library_directories)
+        library_string = format_options(self.libraries, '-l')
+        libdir_string = format_options(self.library_directories, '-L')
         link_string = object_string + libdir_string + library_string
         command = '%s -o %s%s' % (self.cxx, self.binary, link_string)
         cprint('LINK: %s' % self.project_name, magenta)
@@ -248,11 +248,11 @@ class System(threading.Thread):
         return x
 
     def binary(self):
-        if system_type() is 'windows':
+        if system_type() == 'windows':
             exe_extension = '.exe'
-        elif system_type() is 'macosx':
+        elif system_type() == 'macosx':
             exe_extension = '.mach'
-        elif system_type() is 'linux':
+        elif system_type() == 'linux':
             exe_extension = '.elf'
         else:
             error('Something went wrong!')
