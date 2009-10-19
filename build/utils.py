@@ -102,6 +102,7 @@ def cprint(message, color):
     time.sleep(0.1) # This will be removed once Queues are used.
         
 def system_type():
+    # is does not work for *some* reason
     if sys.platform == 'win32':
         return 'windows'
     elif sys.platform == 'linux' or sys.platform == 'linux2':

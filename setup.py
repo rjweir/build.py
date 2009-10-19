@@ -8,6 +8,6 @@ setup(name='build.py',
       description='Minimalistic Build System',
       author='Tres Walsh',
       author_email='tres.walsh@mnmlstc.com',
-      url='http://mnmlstc.com',
+      url='http://treswalsh.com',
       packages=['build']
      )
